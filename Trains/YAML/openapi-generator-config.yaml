@@ -1,0 +1,10 @@
+#
+//  openapi-generator-config.yaml
+//  Trains
+//
+//  Created by МAK on 17.01.2026.
+//
+
+generate:
+  - types
+  - client
