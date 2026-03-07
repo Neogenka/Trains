@@ -18,7 +18,7 @@ enum DayPart: String, CaseIterable, Identifiable, Hashable {
 struct DayPartSectionView: View {
     @Binding var selectedParts: Set<DayPart>
     
-    private let hInset: CGFloat = 16
+    private let rowInsets = EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
     
     var body: some View {
         Section {
@@ -32,6 +32,7 @@ struct DayPartSectionView: View {
                             .foregroundColor(.ypBlack)
                         Spacer()
                         Image(selectedParts.contains(part) ? "excludeOn" : "excludeOff")
+                            .resizable()
                             .renderingMode(.template)
                             .foregroundColor(.ypBlack)
                             .frame(width: 24, height: 24)
@@ -40,12 +41,14 @@ struct DayPartSectionView: View {
                 }
                 .buttonStyle(.plain)
                 .listRowSeparator(.hidden)
+                .listRowInsets(rowInsets)
             }
         } header: {
             Text("Время отправления")
                 .textCase(nil)
                 .font(.system(size: 24, weight: .bold))
                 .foregroundColor(.ypBlack)
+                .listRowInsets(rowInsets)
         }
     }
     

@@ -28,6 +28,40 @@ struct MainTabView: View {
         return false
     }
     
+    // MARK: - Tab icon helpers
+    
+    private static func makeTabIcon(systemName: String, canvasSize: CGFloat) -> UIImage {
+        let config = UIImage.SymbolConfiguration(pointSize: canvasSize * 0.7, weight: .medium)
+        guard let symbol = UIImage(systemName: systemName, withConfiguration: config) else {
+            return UIImage()
+        }
+        let canvas = CGSize(width: canvasSize, height: canvasSize)
+        let renderer = UIGraphicsImageRenderer(size: canvas)
+        let result = renderer.image { _ in
+            let origin = CGPoint(
+                x: (canvas.width  - symbol.size.width)  / 2,
+                y: (canvas.height - symbol.size.height) / 2
+            )
+            symbol.draw(at: origin)
+        }
+        return result.withRenderingMode(.alwaysTemplate)
+    }
+    
+    private static func makeTabIcon(assetName: String, canvasSize: CGFloat) -> UIImage {
+        guard let original = UIImage(named: assetName) else { return UIImage() }
+        let iconSide = canvasSize * 0.75
+        let canvas = CGSize(width: canvasSize, height: canvasSize)
+        let renderer = UIGraphicsImageRenderer(size: canvas)
+        let result = renderer.image { _ in
+            let origin = CGPoint(
+                x: (canvas.width  - iconSide) / 2,
+                y: (canvas.height - iconSide) / 2
+            )
+            original.draw(in: CGRect(origin: origin, size: CGSize(width: iconSide, height: iconSide)))
+        }
+        return result.withRenderingMode(.alwaysTemplate)
+    }
+    
     init() {
         let tab = UITabBarAppearance()
         tab.configureWithOpaqueBackground()
@@ -74,16 +108,18 @@ struct MainTabView: View {
                     }
                 }
                 .tabItem {
-                    Image(systemName: Constants.firstTabSystemImage)
-                        .renderingMode(.template)
-                        .frame(width: Constants.tabIconSize, height: Constants.tabIconSize)
+                    Image(uiImage: Self.makeTabIcon(
+                        systemName: Constants.firstTabSystemImage,
+                        canvasSize: Constants.tabIconSize
+                    ))
                 }
                 
                 SettingsView()
                     .tabItem {
-                        Image(Constants.secondTabAssetImage)
-                            .renderingMode(.template)
-                            .frame(width: Constants.tabIconSize, height: Constants.tabIconSize)
+                        Image(uiImage: Self.makeTabIcon(
+                            assetName: Constants.secondTabAssetImage,
+                            canvasSize: Constants.tabIconSize
+                        ))
                     }
             }
             .toolbar(isTabBarHidden ? .hidden : .visible, for: .tabBar)

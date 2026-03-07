@@ -76,7 +76,7 @@ struct RouteInputSectionView: View {
         VStack(spacing: Constants.Spacing.view) {
             ZStack {
                 Color.ypBlue.cornerRadius(Constants.CornerRadius.view)
-                HStack {
+                HStack(spacing: Constants.Padding.horizontal) {
                     searchCityField
                     squarePathButton
                 }
@@ -104,40 +104,37 @@ struct RouteInputSectionView: View {
     }
     
     private var searchCityField: some View {
-        ZStack {
-            HStack {
-                VStack(alignment: .leading, spacing: Constants.Spacing.field) {
-                    Button { isShowingFromSearch = true } label: {
-                        HStack {
-                            Text(from.isEmpty ? Constants.Placeholder.from : from)
-                                .foregroundColor(from.isEmpty ? Constants.Colors.textField : .ypBlackUniversal)
-                                .font(.system(size: Constants.FontSize.label, weight: .regular))
-                            Spacer()
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    
-                    Spacer().frame(height: 14)
-                    
-                    Button { isShowingToSearch = true } label: {
-                        HStack {
-                            Text(to.isEmpty ? Constants.Placeholder.to : to)
-                                .foregroundColor(from.isEmpty ? Constants.Colors.textField : .ypBlackUniversal)
-                                .font(.system(size: Constants.FontSize.label, weight: .regular))
-                            Spacer()
-                        }
-                        .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
+        VStack(spacing: 0) {
+            Button { isShowingFromSearch = true } label: {
+                HStack {
+                    Text(from.isEmpty ? Constants.Placeholder.from : from)
+                        .foregroundColor(from.isEmpty ? Constants.Colors.textField : .ypBlackUniversal)
+                        .font(.system(size: Constants.FontSize.label, weight: .regular))
+                        .lineLimit(1)
+                    Spacer()
                 }
-                .padding(.vertical, Constants.Padding.vertical)
-                .padding(.horizontal, Constants.Padding.leading)
-                .background(Color.ypWhiteUniversal)
-                .cornerRadius(Constants.CornerRadius.view)
-                .frame(height: 96)
+                .padding(.horizontal, Constants.Padding.horizontal)
+                .padding(.vertical, 14)
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
+            
+            Button { isShowingToSearch = true } label: {
+                HStack {
+                    Text(to.isEmpty ? Constants.Placeholder.to : to)
+                        .foregroundColor(to.isEmpty ? Constants.Colors.textField : .ypBlackUniversal)
+                        .font(.system(size: Constants.FontSize.label, weight: .regular))
+                        .lineLimit(1)
+                    Spacer()
+                }
+                .padding(.horizontal, Constants.Padding.horizontal)
+                .padding(.vertical, 14)
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
+        .background(Color.ypWhiteUniversal)
+        .cornerRadius(Constants.CornerRadius.view)
     }
     
     private var squarePathButton: some View {
