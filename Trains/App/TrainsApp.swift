@@ -8,10 +8,14 @@
 import SwiftUI
 
 @main
-struct TrainsApp: App {
+struct TravelScheduleApp: App {
+    @StateObject private var app = AppState()
+    
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(app)
+                .withGlobalErrors(app)
         }
     }
 }
