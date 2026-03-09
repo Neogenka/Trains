@@ -13,6 +13,11 @@ enum Route: Hashable {
 
 struct MainTabView: View {
     
+    struct StoryPair: Identifiable {
+        let id = UUID()
+        let stories: [Story]
+    }
+    
     private enum Constants {
         static let tabIconSize: CGFloat = 30
         static let firstTabSystemImage = "arrow.up.message.fill"
@@ -21,45 +26,15 @@ struct MainTabView: View {
     
     @EnvironmentObject private var app: AppState
     @Environment(\.colorScheme) private var colorScheme
+    
     @State private var path: [Route] = []
+    @State private var activePair: StoryPair?
+    @State private var startIndex  = 0
+    @State private var seen: Set<Int> = []
     
     private var isTabBarHidden: Bool {
         if let last = path.last, case .carriers = last { return true }
         return false
-    }
-    
-    // MARK: - Tab icon helpers
-    
-    private static func makeTabIcon(systemName: String, canvasSize: CGFloat) -> UIImage {
-        let config = UIImage.SymbolConfiguration(pointSize: canvasSize * 0.7, weight: .medium)
-        guard let symbol = UIImage(systemName: systemName, withConfiguration: config) else {
-            return UIImage()
-        }
-        let canvas = CGSize(width: canvasSize, height: canvasSize)
-        let renderer = UIGraphicsImageRenderer(size: canvas)
-        let result = renderer.image { _ in
-            let origin = CGPoint(
-                x: (canvas.width  - symbol.size.width)  / 2,
-                y: (canvas.height - symbol.size.height) / 2
-            )
-            symbol.draw(at: origin)
-        }
-        return result.withRenderingMode(.alwaysTemplate)
-    }
-    
-    private static func makeTabIcon(assetName: String, canvasSize: CGFloat) -> UIImage {
-        guard let original = UIImage(named: assetName) else { return UIImage() }
-        let iconSide = canvasSize * 0.75
-        let canvas = CGSize(width: canvasSize, height: canvasSize)
-        let renderer = UIGraphicsImageRenderer(size: canvas)
-        let result = renderer.image { _ in
-            let origin = CGPoint(
-                x: (canvas.width  - iconSide) / 2,
-                y: (canvas.height - iconSide) / 2
-            )
-            original.draw(in: CGRect(origin: origin, size: CGSize(width: iconSide, height: iconSide)))
-        }
-        return result.withRenderingMode(.alwaysTemplate)
     }
     
     init() {
@@ -82,7 +57,6 @@ struct MainTabView: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             TabView {
-                
                 NavigationStack(path: $path) {
                     RouteInputSectionView(
                         actionButton: {},
@@ -107,19 +81,32 @@ struct MainTabView: View {
                         }
                     }
                 }
+                .toolbar(.hidden, for: .navigationBar)
+                .safeAreaInset(edge: .top,spacing: 0) {
+                    if path.isEmpty {
+                        StoriesStripView(stories: Story.odd, seenIndices: seen) { index in
+                            guard index < Story.pairs.count else { return }
+                            seen.insert(index)
+                            activePair = StoryPair(stories: Story.pairs[index])
+                            startIndex = 0
+                        }
+                        .background(Color(.systemBackground))
+                    }
+                }
+                .fullScreenCover(item: $activePair) { pair in
+                    StoryView(stories: pair.stories, initialIndex: startIndex)
+                }
                 .tabItem {
-                    Image(uiImage: Self.makeTabIcon(
-                        systemName: Constants.firstTabSystemImage,
-                        canvasSize: Constants.tabIconSize
-                    ))
+                    Image(systemName: Constants.firstTabSystemImage)
+                        .renderingMode(.template)
+                        .frame(width: Constants.tabIconSize, height: Constants.tabIconSize)
                 }
                 
                 SettingsView()
                     .tabItem {
-                        Image(uiImage: Self.makeTabIcon(
-                            assetName: Constants.secondTabAssetImage,
-                            canvasSize: Constants.tabIconSize
-                        ))
+                        Image(Constants.secondTabAssetImage)
+                            .renderingMode(.template)
+                            .frame(width: Constants.tabIconSize, height: Constants.tabIconSize)
                     }
             }
             .toolbar(isTabBarHidden ? .hidden : .visible, for: .tabBar)
