@@ -48,7 +48,7 @@ struct FilterResultView: View {
         .navigationDestination(item: $selectedItem) { item in
             CarrierInfoView(
                 code: item.carrierCode,
-                service: CarrierServiceMock(),
+                service: try! APIFactory.makeCarrierService(),
                 logoAssetName: nil
             )
         }

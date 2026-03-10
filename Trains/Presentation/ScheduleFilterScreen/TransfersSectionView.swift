@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-enum TransfersOption: String, Identifiable, Hashable {
+enum TransfersOption: String, Identifiable, Hashable, Sendable {
     case yes, no
     var id: Self { self }
     var title: String { self == .yes ? "Да" : "Нет" }
@@ -15,8 +15,6 @@ enum TransfersOption: String, Identifiable, Hashable {
 
 struct TransfersSectionView: View {
     @Binding var transfers: TransfersOption?
-    
-    private let rowInsets = EdgeInsets(top: 0, leading: 16, bottom: 0, trailing: 16)
     
     var body: some View {
         Section {
@@ -35,15 +33,12 @@ struct TransfersSectionView: View {
                 .contentShape(Rectangle())
                 .onTapGesture { transfers = option }
                 .listRowSeparator(.hidden)
-                .listRowInsets(rowInsets)
                 .frame(height: 60)
             }
         } header: {
             Text("Показывать варианты с пересадками")
-                .textCase(nil)
                 .font(.system(size: 24, weight: .bold))
                 .foregroundColor(.ypBlack)
-                .listRowInsets(rowInsets)
         }
     }
 }

@@ -7,6 +7,12 @@
 
 import SwiftUI
 
+struct StationLite: Hashable, Identifiable, Sendable {
+    var id = UUID()
+    let title: String
+    let code: String
+}
+
 struct RouteInputSectionView: View {
     
     private enum Constants {
@@ -58,25 +64,36 @@ struct RouteInputSectionView: View {
         }
     }
     
-    @State private var from: String = ""
-    @State private var to: String = ""
+    @State private var from: StationLite?
+    @State private var to: StationLite?
+    
     @State private var isShowingFromSearch = false
     @State private var isShowingToSearch = false
     @EnvironmentObject private var app: AppState
+    private let cityService: CityServiceProtocol
     
     let actionButton: () -> Void
-    let actionSearchButton: (_ from: String, _ to: String) -> Void
+    let actionSearchButton: (_ from: StationLite, _ to: StationLite) -> Void
     
     private var hasBothInputs: Bool {
-        !from.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty &&
-        !to.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        from != nil && to != nil
+    }
+    
+    init(
+        cityService: CityServiceProtocol,
+        actionButton: @escaping () -> Void,
+        actionSearchButton: @escaping (_ from: StationLite, _ to: StationLite) -> Void
+    ) {
+        self.cityService = cityService
+        self.actionButton = actionButton
+        self.actionSearchButton = actionSearchButton
     }
     
     var body: some View {
         VStack(spacing: Constants.Spacing.view) {
             ZStack {
                 Color.ypBlue.cornerRadius(Constants.CornerRadius.view)
-                HStack(spacing: Constants.Padding.horizontal) {
+                HStack {
                     searchCityField
                     squarePathButton
                 }
@@ -86,59 +103,77 @@ struct RouteInputSectionView: View {
             .frame(height: Constants.Size.viewHeight)
             .padding(.horizontal, Constants.Padding.horizontal)
             
-            if hasBothInputs { searchButton.transition(.opacity.combined(with: .scale)) }
+            searchButton
+                .opacity(hasBothInputs ? 1 : 0)
+                .scaleEffect(hasBothInputs ? 1 : 0.98)
+                .disabled(!hasBothInputs)
+                .allowsHitTesting(hasBothInputs)
+                .animation(.easeInOut(duration: Constants.Animation.duration), value: hasBothInputs)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.top, 184)
         .animation(.easeInOut(duration: Constants.Animation.duration), value: hasBothInputs)
         .fullScreenCover(isPresented: $isShowingFromSearch) {
-            CitySearchView { city in
-                from = city
-                isShowingFromSearch = false
-            }
+            CitySearchView(
+                cityService: cityService,
+                onSelect: { city in
+                    from = city
+                    isShowingFromSearch = false
+                },
+                app: app
+            )
         }
         .fullScreenCover(isPresented: $isShowingToSearch) {
-            CitySearchView { city in
-                to = city
-                isShowingToSearch = false
-            }
+            CitySearchView(
+                cityService: cityService,
+                onSelect: { city in
+                    to = city
+                    isShowingToSearch = false
+                },
+                app: app
+            )
         }
     }
     
     private var searchCityField: some View {
-        VStack(spacing: 0) {
-            Button { isShowingFromSearch = true } label: {
-                HStack {
-                    Text(from.isEmpty ? Constants.Placeholder.from : from)
-                        .foregroundColor(from.isEmpty ? Constants.Colors.textField : .ypBlackUniversal)
-                        .font(.system(size: Constants.FontSize.label, weight: .regular))
-                        .lineLimit(1)
-                    Spacer()
+        ZStack {
+            HStack {
+                VStack(alignment: .leading, spacing: Constants.Spacing.field) {
+                    Button { isShowingFromSearch = true } label: {
+                        HStack {
+                            Text(from?.title ?? Constants.Placeholder.from)
+                                .foregroundColor(from == nil ? Constants.Colors.textField : .ypBlackUniversal)
+                                .font(.system(size: Constants.FontSize.label, weight: .regular))
+                            Spacer()
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    
+                    Spacer().frame(height: 14)
+                    
+                    Button { isShowingToSearch = true } label: {
+                        HStack {
+                            Text(to?.title ?? Constants.Placeholder.to)
+                                .foregroundColor(to == nil ? Constants.Colors.textField : .ypBlackUniversal)
+                                .font(.system(size: Constants.FontSize.label, weight: .regular))
+                            Spacer()
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                 }
-                .padding(.horizontal, Constants.Padding.horizontal)
-                .padding(.vertical, 14)
-                .contentShape(Rectangle())
+                .padding(.vertical, Constants.Padding.vertical)
+                .padding(.horizontal, Constants.Padding.leading)
+                .background(Color.ypWhiteUniversal)
+                .cornerRadius(Constants.CornerRadius.view)
+                .frame(height: 96)
             }
-            .buttonStyle(.plain)
-            
-            Button { isShowingToSearch = true } label: {
-                HStack {
-                    Text(to.isEmpty ? Constants.Placeholder.to : to)
-                        .foregroundColor(to.isEmpty ? Constants.Colors.textField : .ypBlackUniversal)
-                        .font(.system(size: Constants.FontSize.label, weight: .regular))
-                        .lineLimit(1)
-                    Spacer()
-                }
-                .padding(.horizontal, Constants.Padding.horizontal)
-                .padding(.vertical, 14)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
         }
-        .background(Color.ypWhiteUniversal)
-        .cornerRadius(Constants.CornerRadius.view)
     }
     
     private var squarePathButton: some View {
-        let isDisabled = from.isEmpty && to.isEmpty
+        let isDisabled = (from == nil && to == nil)
         
         return Button {
             withAnimation(.spring(response: Constants.Animation.swapSpringResponse,
@@ -158,11 +193,13 @@ struct RouteInputSectionView: View {
     
     private var searchButton: some View {
         Button {
-            actionSearchButton(from, to)
-        } label:{
+            if let from, let to {
+                actionSearchButton(from, to)
+            }
+        }label:{
             Text(Constants.Titles.searchButton)
                 .font(.system(size: Constants.FontSize.labelButton, weight: .bold))
-                .foregroundColor(.ypWhiteUniversal)
+                .foregroundColor(Constants.Colors.cardBackground)
                 .frame(width: Constants.Size.searchButtonWidth, height: Constants.Size.searchButtonHeight)
                 .background(Constants.Colors.searchButtonBackground)
                 .cornerRadius(Constants.CornerRadius.searchButton)
@@ -173,5 +210,7 @@ struct RouteInputSectionView: View {
 }
 
 #Preview {
-    RouteInputSectionView(actionButton: {}, actionSearchButton: {from,to in })
+    RouteInputSectionView(cityService: MockCityService(),
+                          actionButton: {},
+                          actionSearchButton: {from,to in })
 }

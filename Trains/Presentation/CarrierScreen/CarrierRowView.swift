@@ -73,7 +73,7 @@ struct CarrierTableRow: View {
                     .font(.system(size: Constants.FontSize.name, weight: .regular))
                     .foregroundColor(.ypBlackUniversal)
                 
-                if let note = viewModel.note {
+                if viewModel.hasTransfers, let note = viewModel.note {
                     Text(note)
                         .font(.system(size: Constants.FontSize.note, weight: .regular))
                         .foregroundColor(.ypRed)
@@ -125,22 +125,45 @@ struct CarrierTableRow: View {
     
     @ViewBuilder
     private var logoView: some View {
-        if let name = viewModel.logoSystemName, UIImage(named: name) != nil {
+        if let url = viewModel.finalLogoURL {
+            AsyncImage(url: url) { phase in
+                switch phase {
+                    case .empty:
+                        ProgressView()
+                            .frame(width: Constants.Size.logo, height: Constants.Size.logo)
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .frame(width: Constants.Size.logo, height: Constants.Size.logo)
+                            .clipShape(RoundedRectangle(cornerRadius: Constants.Corner.logo, style: .continuous))
+                    case .failure:
+                        fallbackLogo
+                    @unknown default:
+                        fallbackLogo
+                }
+            }
+        } else if let name = viewModel.finalLogoSystemName, UIImage(named: name) != nil {
             Image(name)
                 .resizable()
-                .scaledToFill()
-                .clipped()
-        } else if let name = viewModel.logoSystemName {
+                .frame(width: Constants.Size.logo, height: Constants.Size.logo)
+                .clipShape(RoundedRectangle(cornerRadius: Constants.Corner.logo, style: .continuous))
+        } else if let name = viewModel.finalLogoSystemName {
             Image(systemName: name)
                 .resizable()
-                .scaledToFill()
-                .clipped()
+                .frame(width: Constants.Size.logo, height: Constants.Size.logo)
+                .clipShape(RoundedRectangle(cornerRadius: Constants.Corner.logo, style: .continuous))
+                .foregroundColor(.ypGray)
         } else {
-            Image(systemName: Constants.Images.System.fallback)
-                .resizable()
-                .scaledToFill()
-                .clipped()
+            fallbackLogo
         }
+    }
+    
+    private var fallbackLogo: some View {
+        Image(systemName: "photo")
+            .resizable()
+            .frame(width: Constants.Size.logo, height: Constants.Size.logo)
+            .clipShape(RoundedRectangle(cornerRadius: Constants.Corner.logo, style: .continuous))
+            .foregroundColor(.ypGray)
     }
 }
 
@@ -155,7 +178,8 @@ struct CarrierTableRow: View {
             arriveTime: "14:30",
             durationText: "4 ч 30 мин",
             note: "С пересадкой в Костроме",
-            carrierCode: "680"
+            carrierCode: "680",
+            hasTransfers: true
         )
     )
     .padding(16)

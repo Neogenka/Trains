@@ -9,11 +9,11 @@ import OpenAPIRuntime
 
 typealias CopyrightResponse = Components.Schemas.CopyrightResponse
 
-protocol CopyrightServiceProtocol {
+protocol CopyrightServiceProtocol: Actor {
     func getCopyright() async throws -> CopyrightResponse
 }
 
-final class CopyrightService: CopyrightServiceProtocol {
+final actor CopyrightService: CopyrightServiceProtocol {
     
     private let client: Client
     private let apikey: String

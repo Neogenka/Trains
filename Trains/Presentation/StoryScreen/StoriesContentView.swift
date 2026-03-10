@@ -27,7 +27,6 @@ struct StoriesContentView: View {
         
         .overlay(alignment: .bottomLeading) {
             VStack {
-//                Spacer()
                 VStack(alignment: .leading, spacing: 10) {
                     Text(story.title)
                         .font(.bold34)

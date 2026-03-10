@@ -13,7 +13,7 @@ struct MaskFragmentView: View {
             .fixedSize(horizontal: false, vertical: true)
             .frame(height: .progressBarHeight)
             .cornerRadius(3)
-            .foregroundStyle(.white) // белый цвет для progressBar
+            .foregroundStyle(.white)
     }
 }
 

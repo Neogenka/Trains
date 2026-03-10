@@ -6,13 +6,13 @@
 //
 
 import SwiftUI
+import Combine
+import Observation
 
 struct SettingsView: View {
     
-    @AppStorage(AppStorageKeys.isDarkThemeEnabled) private var isDarkThemeEnabled = false
-    @AppStorage(AppStorageKeys.didBootstrapTheme) private var didBootstrapTheme = true
-    
-    @State private var showUserAgreement = false
+    @State private var model = SettingsViewModel()
+    @State private var cancelLables = Set<AnyCancellable>()
     
     private enum Theme {
         static let onColor: Color   = .ypBlue
@@ -30,12 +30,12 @@ struct SettingsView: View {
                             .font(.regular17)
                             .foregroundColor(.ypBlack)
                         Spacer()
-                        Toggle("", isOn: $isDarkThemeEnabled)
-                            .labelsHidden()
-                            .tint(Theme.onColor)
-                            .onChange(of: isDarkThemeEnabled) { _, _ in
-                                didBootstrapTheme = true
-                            }
+                        Toggle("", isOn: Binding(
+                            get: { model.isDarkThemeEnabled },
+                            set: { model.toggleDarkTheme($0) }
+                        ))
+                        .labelsHidden()
+                        .tint(Theme.onColor)
                     }
                     .listRowInsets(.init(top: 19, leading: 16, bottom: 19, trailing: 16))
                     .listRowBackground(Color.clear)
@@ -43,7 +43,7 @@ struct SettingsView: View {
                     .padding(.top, 24)
                     
                     Button {
-                        showUserAgreement = true
+                        model.openAgreement()
                     } label: {
                         HStack {
                             Text("Пользовательское соглашение")
@@ -65,11 +65,15 @@ struct SettingsView: View {
                 .environment(\.defaultMinListRowHeight, 60)
             }
             .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+            }
             .toolbar(.hidden, for: .navigationBar)
-            .navigationDestination(isPresented: $showUserAgreement) {
+            .navigationDestination(isPresented: Binding(
+                get: { model.showUserAgreement },
+                set: { model.showUserAgreement = $0 }
+            )) {
                 UserAgreementWebScreen()
             }
-            
             .safeAreaInset(edge: .bottom) {
                 VStack(spacing: 6) {
                     Text("Приложение использует API «Яндекс.Расписания»")
@@ -86,20 +90,23 @@ struct SettingsView: View {
                 .padding(.bottom, 8)
                 .background(Color(.systemBackground))
             }
+            .onAppear {
+                model.themeDidChange
+                    .receive(on: DispatchQueue.main)
+                    .sink { _ in
+                    }
+                    .store(in: &cancelLables)
+            }
         }
     }
 }
 
 #Preview {
-    NavigationStack {
-        SettingsView()
-    }
-    .preferredColorScheme(.light)
+    SettingsView()
+        .preferredColorScheme(.light)
 }
 
 #Preview("Dark") {
-    NavigationStack {
-        SettingsView()
-    }
-    .preferredColorScheme(.dark)
+    SettingsView()
+        .preferredColorScheme(.dark)
 }

@@ -9,19 +9,18 @@ import SwiftUI
 
 struct ScheduleFilterView: View {
     
-    @State private var selectedParts: Set<DayPart> = []
-    @State private var transfers: TransfersOption? = nil
+    @State private var model = ScheduleFilterViewModel()
     
     var onApply: ((Set<DayPart>, TransfersOption?) -> Void)? = nil
     @Environment(\.dismiss) private var dismiss
     
-    private var isApplyEnabled: Bool { !selectedParts.isEmpty && transfers != nil }
+    private var isApplyEnabled: Bool { !model.selectedParts.isEmpty && model.transfers != nil }
     
     var body: some View {
         ZStack {
             List {
-                DayPartSectionView(selectedParts: $selectedParts)
-                TransfersSectionView(transfers: $transfers)
+                DayPartSectionView(selectedParts: $model.selectedParts)
+                TransfersSectionView(transfers: $model.transfers)
             }
             .listStyle(.plain)
             .scrollIndicators(.hidden)
@@ -34,24 +33,32 @@ struct ScheduleFilterView: View {
             ToolbarItem(placement: .navigationBarLeading) {
                 Button { dismiss() } label: {
                     Image(systemName: "chevron.left")
+                        .foregroundColor(.ypBlack)
                 }
             }
         }
         .safeAreaInset(edge: .bottom) {
-            if isApplyEnabled {
-                HStack {
-                    Button("Применить") {
-                        
-                    }
-                    .font(.system(size: 17, weight: .bold))
-                    .frame(maxWidth: .infinity, minHeight: 56)
-                    .background(Color.ypBlue)
-                    .foregroundColor(.ypWhiteUniversal)
-                    .cornerRadius(16)
+            VStack(spacing: 0) {
+                Button {
+                    onApply?(model.selectedParts, model.transfers)
+                } label: {
+                    Text("Применить")
+                        .font(.bold17)
+                        .frame(maxWidth: .infinity, minHeight: 56)
+                        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 24)
+                .buttonStyle(.plain)
+                .foregroundColor(.ypWhiteUniversal)
+                .background(Color.ypBlue)
+                .cornerRadius(16)
+                .opacity(isApplyEnabled ? 1 : 0)
+                .disabled(!isApplyEnabled)
+                .allowsHitTesting(isApplyEnabled)
+                .animation(.easeInOut(duration: 0.2), value: isApplyEnabled)
             }
+            .padding(.horizontal, 16)
+            .padding(.bottom, 24)
+            .background(Color(.systemBackground))
         }
     }
 }

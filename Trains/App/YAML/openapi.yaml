@@ -508,10 +508,28 @@ components:
     Segment:
       type: object
       properties:
+        thread:
+          $ref: '#/components/schemas/Thread'
         from:
           $ref: '#/components/schemas/Station'
         to:
           $ref: '#/components/schemas/Station'
+        departure_platform:
+          type: string
+        arrival_platform:
+          type: string
+        departure_terminal:
+          type: string
+        arrival_terminal:
+          type: string
+        stops:
+          type: string
+        duration:
+          type: integer
+          description: Длительность рейса в секундах
+        start_date:
+          type: string
+          format: date
         departure:
           type: string
           format: time
@@ -520,13 +538,34 @@ components:
           type: string
           format: time
           description: Время прибытия
-        thread:
-          $ref: '#/components/schemas/Thread'
-        tickets_info:
-          $ref: '#/components/schemas/TicketsInfo'
-        duration:
-          type: integer
-          description: Длительность рейса в секундах
+        days:
+          type: string
+        except_days:
+          type: string
+        transfers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transfer'
+        details:
+          type: array
+          items:
+            $ref: '#/components/schemas/Segment'
+        has_transfers:
+          type: boolean
+          description: Признак наличия пересадок по маршруту.
+    Transfer:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        short_title:
+          type: string
+        popular_title:
+          type: string
+        code:
+          type: string
     Pagination:
       type: object
       properties:
@@ -650,27 +689,9 @@ components:
         code:
           type: integer
           description: Код перевозчика в системе Яндекс Расписаний
-        contacts:
-          type: string
-          description: Контактная информация
-        url:
-          type: string
-          description: Ссылка на сайт перевозчика
         title:
           type: string
           description: Название перевозчика
-        phone:
-          type: string
-          description: Контактный телефон перевозчика
-        address:
-          type: string
-          description: Адрес перевозчика
-        logo:
-          type: string
-          description: Ссылка на логотип перевозчика
-        email:
-          type: string
-          description: Электронная почта перевозчика
         codes:
           type: object
           properties:
@@ -683,6 +704,27 @@ components:
             iata:
               type: string
               description: Код перевозчика в системе IATA
+        address:
+          type: string
+          description: Адрес перевозчика
+        url:
+          type: string
+          description: Ссылка на сайт перевозчика
+        email:
+          type: string
+          description: Электронная почта перевозчика
+        contacts:
+          type: string
+          description: Контактная информация
+        phone:
+          type: string
+          description: Контактный телефон перевозчика
+        logo:
+          type: string
+          description: Ссылка на логотип перевозчика
+        logo_svg:
+          type: string
+          description: Логотип квадратный маленький
     TicketsInfo:
       type: object
       properties:

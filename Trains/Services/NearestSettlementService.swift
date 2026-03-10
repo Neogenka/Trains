@@ -9,11 +9,11 @@ import OpenAPIRuntime
 
 typealias NearestCityResponse = Components.Schemas.NearestCityResponse
 
-protocol NearestSettlementServiceProtocol {
+protocol NearestSettlementServiceProtocol: Actor {
     func getNearestCity(lat: Double, lng: Double) async throws -> NearestCityResponse
 }
 
-final class NearestSettlementService: NearestSettlementServiceProtocol {
+final actor NearestSettlementService: NearestSettlementServiceProtocol {
     
     private let client: Client
     private let apikey: String
