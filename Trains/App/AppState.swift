@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+@MainActor
 final class AppState: ObservableObject {
     @Published var errorState: ErrorState? = nil
     
@@ -18,27 +19,44 @@ final class AppState: ObservableObject {
         errorState = nil
     }
     
-    func showErrorAndRetry(_ error: ErrorState,delay: TimeInterval = 3, maxRetries: Int = 3,
-                           retry: @escaping (@escaping (Bool) -> Void) -> Void) {
+    func showErrorAndRetry(
+        _ error: ErrorState,
+        delay: TimeInterval = 3,
+        maxRetries: Int = 3,
+        retry: @Sendable @escaping () async -> Bool
+    ) {
         errorState = error
-        retryWithDelay( error,delay: delay,
-                        remainingAttempts: maxRetries,
-                        retry: retry)
-    }
-    
-    private func retryWithDelay(_ error: ErrorState,delay: TimeInterval,remainingAttempts: Int,
-                                retry: @escaping (@escaping (Bool) -> Void) -> Void) {
-        guard remainingAttempts > 0 else { return }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            retry { success in DispatchQueue.main.async {
-                if success { self?.hideError()} else { self?.retryWithDelay( error,
-                                                                             delay: delay,
-                                                                             remainingAttempts: remainingAttempts - 1,
-                                                                             retry: retry)
-                }
-            }
-            }
+        Task { // MainActor
+            await retryWithDelay(
+                error,
+                delay: delay,
+                remainingAttempts: maxRetries,
+                retry: retry
+            )
         }
     }
+    
+    private func retryWithDelay(
+        _ error: ErrorState,
+        delay: TimeInterval,
+        remainingAttempts: Int,
+        retry: @Sendable @escaping () async -> Bool
+    ) async {
+        guard remainingAttempts > 0 else { return }
+        
+        try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+        
+        let success = await retry()
+        if success {
+            hideError()
+        } else {
+            await retryWithDelay(
+                error,
+                delay: delay,
+                remainingAttempts: remainingAttempts - 1,
+                retry: retry
+            )
+        }
+    }
+    
 }

@@ -29,6 +29,7 @@ struct SearchTextField: View {
                 .foregroundColor(.primary)
                 .disableAutocorrection(true)
                 .textInputAutocapitalization(.never)
+                .submitLabel(.search)
                 .padding(.trailing, UI.textTrailingInsetForClear)
         }
         .padding(UI.innerPadding)

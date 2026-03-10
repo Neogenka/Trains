@@ -8,7 +8,7 @@
 import SwiftUI
 
 enum Route: Hashable {
-    case carriers(from: String, to: String)
+    case carriers(from: StationLite, to: StationLite)
 }
 
 struct MainTabView: View {
@@ -39,7 +39,6 @@ struct MainTabView: View {
     
     // MARK: - Tab icon helpers
     
-    /// Renders an SF Symbol centered on a fixed-size canvas so both tabs align identically.
     private static func makeTabIcon(systemName: String, canvasSize: CGFloat) -> UIImage {
         let config = UIImage.SymbolConfiguration(pointSize: canvasSize * 0.7, weight: .medium)
         guard let symbol = UIImage(systemName: systemName, withConfiguration: config) else {
@@ -57,7 +56,6 @@ struct MainTabView: View {
         return result.withRenderingMode(.alwaysTemplate)
     }
     
-    /// Renders a custom asset image centered on a fixed-size canvas so both tabs align identically.
     private static func makeTabIcon(assetName: String, canvasSize: CGFloat) -> UIImage {
         guard let original = UIImage(named: assetName) else { return UIImage() }
         let iconSide = canvasSize * 0.75
@@ -94,61 +92,65 @@ struct MainTabView: View {
         ZStack(alignment: .bottom) {
             TabView {
                 NavigationStack(path: $path) {
-                    ScrollView {
-                        VStack(spacing: 0) {
-                            if path.isEmpty {
-                                StoriesStripView(stories: Story.odd, seenIndices: seen) { index in
-                                    guard index < Story.pairs.count else { return }
-                                    seen.insert(index)
-                                    activePair = StoryPair(stories: Story.pairs[index])
-                                    startIndex = 0
-                                }
+                    if let cityService = try? APIFactory.makeCityService() {
+                        RouteInputSectionView(
+                            cityService: cityService,
+                            actionButton: {},
+                            actionSearchButton: { (from: StationLite, to: StationLite) in
+                                path.append(.carriers(from: from, to: to))
                             }
-                            
-                            RouteInputSectionView(
-                                actionButton: {},
-                                actionSearchButton: { from, to in
-                                    path.append(.carriers(from: from, to: to))
-                                }
-                            )
-                            .padding(.top, 20)
+                        )
+                        .navigationDestination(for: Route.self) { route in
+                            switch route {
+                                case let .carriers(from, to):
+                                    if let search = try? APIFactory.makeSearchService(),
+                                       let carrier = try? APIFactory.makeCarrierService() {
+                                        CarrierListView(
+                                            headerFrom: from.title,
+                                            headerTo: to.title,
+                                            fromStationCode: from.code,
+                                            toStationCode: to.code,
+                                            searchService: search,
+                                            carrierService: carrier,
+                                            app: app
+                                        )
+                                    } else {
+                                        ErrorStateView(state: .server)
+                                            .task { app.showError(.server) }
+                                    }
+                            }
                         }
-                    }
-                    .scrollBounceBehavior(.basedOnSize)
-                    .navigationDestination(for: Route.self) { route in
-                        switch route {
-                            case let .carriers(from, to):
-                                if let search = try? APIFactory.makeSearchService(),
-                                   let carrier = try? APIFactory.makeCarrierService() {
-                                    CarrierListView(headerFrom: from,
-                                                    headerTo: to,
-                                                    searchService: search,
-                                                    carrierService: carrier
-                                    )
-                                } else {
-                                    ErrorStateView(state: .server)
-                                        .task { app.showError(.server) }
-                                }
-                        }
+                    } else {
+                        ErrorStateView(state: .server)
+                            .task { app.showError(.server) }
                     }
                 }
                 .toolbar(.hidden, for: .navigationBar)
+                .safeAreaInset(edge: .top,spacing: 0) {
+                    if path.isEmpty {
+                        StoriesStripView(stories: Story.odd, seenIndices: seen) { index in
+                            guard index < Story.pairs.count else { return }
+                            seen.insert(index)
+                            activePair = StoryPair(stories: Story.pairs[index])
+                            startIndex = 0
+                        }
+                        .background(Color(.systemBackground))
+                    }
+                }
                 .fullScreenCover(item: $activePair) { pair in
                     StoryView(stories: pair.stories, initialIndex: startIndex)
                 }
                 .tabItem {
-                    Image(uiImage: Self.makeTabIcon(
-                        systemName: Constants.firstTabSystemImage,
-                        canvasSize: Constants.tabIconSize
-                    ))
+                    Image(systemName: Constants.firstTabSystemImage)
+                        .renderingMode(.template)
+                        .frame(width: Constants.tabIconSize, height: Constants.tabIconSize)
                 }
                 
                 SettingsView()
                     .tabItem {
-                        Image(uiImage: Self.makeTabIcon(
-                            assetName: Constants.secondTabAssetImage,
-                            canvasSize: Constants.tabIconSize
-                        ))
+                        Image(Constants.secondTabAssetImage)
+                            .renderingMode(.template)
+                            .frame(width: Constants.tabIconSize, height: Constants.tabIconSize)
                     }
             }
             .toolbar(isTabBarHidden ? .hidden : .visible, for: .tabBar)

@@ -9,11 +9,11 @@ import OpenAPIRuntime
 
 typealias ThreadStationsResponse = Components.Schemas.ThreadStationsResponse
 
-protocol ThreadServiceProtocol {
+protocol ThreadServiceProtocol: Actor{
     func getRouteStations(uid: String) async throws -> ThreadStationsResponse
 }
 
-final class ThreadService: ThreadServiceProtocol {
+final actor ThreadService: ThreadServiceProtocol {
     
     private let client: Client
     private let apikey: String

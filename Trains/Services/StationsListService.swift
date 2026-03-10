@@ -10,14 +10,15 @@ import Foundation
 
 typealias AllStationsResponse = Components.Schemas.AllStationsResponse
 
-protocol StationsListServiceProtocol {
+protocol StationsListServiceProtocol: Actor {
     func getAllStations() async throws -> AllStationsResponse
 }
 
-final class StationsListService: StationsListServiceProtocol {
+final actor StationsListService: StationsListServiceProtocol {
     
     private let client: Client
     private let apikey: String
+    private let decoder = JSONDecoder()
     
     init(client: Client, apikey: String) {
         self.client = client

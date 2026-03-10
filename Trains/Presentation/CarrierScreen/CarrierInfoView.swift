@@ -151,11 +151,3 @@ struct CarrierInfoView: View {
     
     private func digits(_ s: String) -> String { s.filter { $0.isNumber || $0 == "+" } }
 }
-
-#if DEBUG
-#Preview {
-    NavigationStack {
-        CarrierInfoView(code: "680", service: CarrierServiceMock(), logoAssetName: "rzd")
-    }
-}
-#endif

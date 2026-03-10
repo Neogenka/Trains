@@ -39,54 +39,61 @@ struct StationSearchView: View {
             static let clearIcon = "xmark.circle.fill"
             static let textTrailingInsetForClear: CGFloat = 34
         }
+        enum Paging {
+            static let pageSize = 12
+            static let prefetchThreshold = 5
+        }
+        static let minSearchCharacters = 2
     }
     
     let city: String
-    let onSelect: (String) -> Void
+    let onSelect: (StationLite) -> Void
     
-    // MARK: - State
-    @State private var searchText: String = ""
-    
-    // MARK: - Data (пока мок)
-    private let stations = [
-        "Киевский вокзал", "Курский вокзал", "Ярославский вокзал",
-        "Белорусский вокзал", "Савеловский вокзал", "Ленинградский вокзал"
-    ]
-    
-    private var filteredStations: [String] {
-        let q = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return q.isEmpty ? stations : stations.filter { $0.localizedCaseInsensitiveContains(q) }
-    }
-    
+    @State private var model: StationSearchViewModel
     @Environment(\.dismiss) private var dismiss
     
-    // MARK: - Body
+    init(stationService: some StationServiceProtocol, city: String, onSelect: @escaping (StationLite) -> Void, app: AppState) {
+        self.city = city
+        self.onSelect = onSelect
+        _model = State(initialValue: StationSearchViewModel(stationService: stationService, city: city, app: app))
+    }
+    
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 searchField
                 
-                if filteredStations.isEmpty { notFoundView } else { stationList }
+                if model.filteredStations.isEmpty {
+                    notFoundView
+                } else {
+                    stationList
+                }
             }
             .navigationTitle("Выбор станции")
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarBackButtonHidden(false)
             .toolbarRole(.editor)
+            .task {
+                await model.loadStations()
+            }
+            .onChange(of: model.searchText) {
+                model.currentLoadedCount = min(Constants.Paging.pageSize, model.filteredStations.count)
+            }
         }
         .tint(.ypBlack)
     }
     
     private var searchField: some View {
-        SearchTextField(text: $searchText, placeholder: "Введите запрос")
+        SearchTextField(text: $model.searchText, placeholder: "Введите запрос")
             .padding(.horizontal, Constants.Padding.horizontal)
             .padding(.top, Constants.Padding.searchTop)
             .padding(.bottom, Constants.Padding.searchBottom)
     }
     
     private var stationList: some View {
-        List(filteredStations, id: \.self) { station in
+        List(model.filteredStations, id: \.self) { station in
             HStack {
-                Text(station)
+                Text(station.title)
                     .font(.system(size: Constants.FontSize.station, weight: .regular))
                     .foregroundColor(.ypBlack)
                 Spacer()
@@ -113,42 +120,4 @@ struct StationSearchView: View {
             Spacer()
         }
     }
-}
-
-#Preview {
-    NavigationStack {
-        StationSearchView(city: "Москва") { station in
-            print("Выбрана станция: \(station)")
-        }
-    }
-}
-
-#Preview("StationSearchView + Error internet") {
-    struct Harness: View {
-        @StateObject var app = AppState()
-        var body: some View {
-            NavigationStack {
-                StationSearchView(city: "Москва") { _ in }
-            }
-            .environmentObject(app)
-            .withGlobalErrors(app)
-            .onAppear { app.showError(.offline) }
-        }
-    }
-    return Harness()
-}
-
-#Preview("StationSearchView + Error server") {
-    struct Harness: View {
-        @StateObject var app = AppState()
-        var body: some View {
-            NavigationStack {
-                StationSearchView(city: "Москва") { _ in }
-            }
-            .environmentObject(app)
-            .withGlobalErrors(app)
-            .onAppear { app.showError(.server) }
-        }
-    }
-    return Harness()
 }

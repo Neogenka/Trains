@@ -20,33 +20,40 @@ private func classifyError(_ error: Error) -> ErrorState {
     return .server
 }
 
-func loadWithGlobalError<T>(
+@MainActor
+func loadWithGlobalError<T: Sendable>(
     app: AppState,
     delay: TimeInterval = 10,
     maxRetries: Int = 3,
-    task: @escaping () async throws -> T,
-    onSuccess: @MainActor @escaping (T) -> Void
+    task: @Sendable @escaping () async throws -> T,
+    onSuccess: @MainActor @Sendable @escaping (T) -> Void
 ) {
     Task {
         do {
             let value = try await task()
-            await MainActor.run {
-                app.hideError()
-                onSuccess(value)
-            }
+            app.hideError()
+            onSuccess(value)
         } catch {
             let state = classifyError(error)
-            await MainActor.run {
-                app.showErrorAndRetry(state, delay: delay, maxRetries: maxRetries) { _ in
-                    loadWithGlobalError(
-                        app: app,
-                        delay: delay,
-                        maxRetries: maxRetries,
-                        task: task,
-                        onSuccess: onSuccess
-                    )
+            let retryAttempt: @Sendable () async -> Bool = {
+                do {
+                    let value = try await task()
+                    await MainActor.run {
+                        app.hideError()
+                        onSuccess(value)
+                    }
+                    return true
+                } catch {
+                    return false
                 }
             }
+            
+            app.showErrorAndRetry(
+                state,
+                delay: delay,
+                maxRetries: maxRetries,
+                retry: retryAttempt
+            )
         }
     }
 }

@@ -9,11 +9,11 @@ import OpenAPIRuntime
 
 typealias ScheduleResponse = Components.Schemas.ScheduleResponse
 
-protocol ScheduleServiceProtocol {
+protocol ScheduleServiceProtocol: Actor {
     func getStationSchedule(station: String) async throws -> ScheduleResponse
 }
 
-final class ScheduleService: ScheduleServiceProtocol {
+final actor ScheduleService: ScheduleServiceProtocol {
     
     private let client: Client
     private let apikey: String
