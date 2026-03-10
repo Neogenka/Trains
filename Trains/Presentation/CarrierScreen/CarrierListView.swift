@@ -9,6 +9,14 @@ import SwiftUI
 
 struct CarrierListView: View {
     
+    private struct FilterResultBox: Identifiable, Hashable {
+        let id = UUID()
+        let items: [CarrierRowViewModel]
+        
+        static func == (lhs: Self, rhs: Self) -> Bool { lhs.id == rhs.id }
+        func hash(into hasher: inout Hasher) { hasher.combine(id) }
+    }
+    
     private enum Constants {
         enum Spacing {
             static let view: CGFloat = 12
@@ -51,6 +59,7 @@ struct CarrierListView: View {
     @State private var showFilters = false
     @State private var loadedItems: [CarrierRowViewModel] = []
     @State private var isLoading = true
+    @State private var filterResultBox: FilterResultBox? = nil
     
     var body: some View {
         
@@ -85,25 +94,40 @@ struct CarrierListView: View {
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbar(.hidden, for: .tabBar)
         .toolbarBackground(.hidden, for: .tabBar)
-        
         .safeAreaInset(edge: .bottom) {
-            HStack {
-                Button("Уточнить время") {
-                    showFilters = true
-                }
-                .font(.system(size: Constants.FontSize.bottomButton, weight: .bold))
-                .frame(maxWidth: .infinity, minHeight: Constants.Size.bottomButtonHeight)
-                .background(Color.ypBlue)
-                .foregroundColor(.ypWhiteUniversal)
-                .cornerRadius(Constants.Corner.bottomButton)
+            Button {
+                showFilters = true
+            } label: {
+                Text("Уточнить время")
+                    .font(.system(size: Constants.FontSize.bottomButton, weight: .bold))
+                    .frame(maxWidth: .infinity, minHeight: Constants.Size.bottomButtonHeight)
+                    .contentShape(
+                        RoundedRectangle(cornerRadius: Constants.Corner.bottomButton, style: .continuous)
+                    )
             }
+            .buttonStyle(.plain)
+            .foregroundColor(.ypWhiteUniversal)
+            .background(Color.ypBlue)
+            .cornerRadius(Constants.Corner.bottomButton)
             .padding(.horizontal, Constants.Spacing.horizontal)
             .padding(.bottom, Constants.Spacing.bottom)
             .background(Color(.systemBackground))
         }
         .navigationDestination(isPresented: $showFilters) {
             ScheduleFilterView { selectedParts, transfers in
+                let filtered = filterItems(
+                    items: loadedItems,
+                    selectedParts: selectedParts,
+                    transfers: transfers
+                )
+                self.filterResultBox = .init(items: filtered)
             }
+        }
+        .navigationDestination(item: $filterResultBox) { box in
+            FilterResultView(headerFrom: headerFrom,
+                             headerTo: headerTo,
+                             items: box.items
+            )
         }
         .onAppear { load() }
     }
@@ -144,6 +168,23 @@ struct CarrierListView: View {
     private func fetchCarriers() async throws -> [CarrierRowViewModel] {
         try await Task.sleep(nanoseconds: Constants.Mock.delayNs)
         return items
+    }
+    
+    private func filterItems(items: [CarrierRowViewModel], selectedParts: Set<DayPart>, transfers:TransfersOption?) -> [CarrierRowViewModel] {
+        items.filter { viewModel in
+            guard let hour = viewModel.departureHour else { return false }
+            
+            let matchesDayPart = selectedParts.contains { $0.contains(hour: hour) }
+            
+            let matchesTransfers: Bool
+            if let t = transfers {
+                matchesTransfers = (t == .yes && viewModel.hasTransfers) || (t == .no && !viewModel.hasTransfers)
+            } else {
+                matchesTransfers = true
+            }
+            
+            return matchesDayPart && matchesTransfers
+        }
     }
 }
 

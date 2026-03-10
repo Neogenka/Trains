@@ -8,7 +8,7 @@
 import SwiftUI
 
 // MARK: - ViewModel
-struct CarrierRowViewModel: Identifiable {
+struct CarrierRowViewModel: Identifiable, Hashable {
     let id = UUID()
     let carrierName: String
     let logoSystemName: String?
@@ -17,27 +17,61 @@ struct CarrierRowViewModel: Identifiable {
     let arriveTime: String
     let durationText: String
     let note: String?
+    let carrierCode: String
+    
+    static func == (lhs: Self, rhs: Self) -> Bool { lhs.id == rhs.id }
+    func hash(into hasher: inout Hasher) { hasher.combine(id) }
 }
 
 extension CarrierRowViewModel {
     static let mock: [CarrierRowViewModel] = [
         .init(carrierName: "РЖД", logoSystemName: "rzd",
               dateText: "14 января", departTime: "22:30", arriveTime: "08:15",
-              durationText: "20 часов", note: "С пересадкой в Костроме"),
+              durationText: "20 часов", note: "С пересадкой в Костроме", carrierCode: "680"),
         .init(carrierName: "ФГК", logoSystemName: "fgk",
               dateText: "15 января", departTime: "01:15", arriveTime: "09:00",
-              durationText: "9 часов", note: nil),
+              durationText: "9 часов", note: nil, carrierCode: "681"),
         .init(carrierName: "Урал логистика", logoSystemName: "ural",
               dateText: "15 января", departTime: "12:30", arriveTime: "21:00",
-              durationText: "9 часов", note: nil),
+              durationText: "9 часов", note: nil, carrierCode: "682"),
         .init(carrierName: "РЖД", logoSystemName: "rzd",
               dateText: "17 января", departTime: "22:30", arriveTime: "08:15",
-              durationText: "20 часов", note: "С пересадкой в Костроме"),
+              durationText: "20 часов", note: "С пересадкой в Костроме", carrierCode: "680"),
         .init(carrierName: "РЖД", logoSystemName: "rzd",
               dateText: "17 января", departTime: "22:30", arriveTime: "08:15",
-              durationText: "20 часов", note: "С пересадкой в Костроме"),
+              durationText: "20 часов", note: "С пересадкой в Костроме", carrierCode: "680"),
         .init(carrierName: "Урал логистика", logoSystemName: "ural",
               dateText: "17 января", departTime: "12:30", arriveTime: "21:00",
-              durationText: "9 часов", note: nil)
+              durationText: "9 часов", note: nil, carrierCode: "682")
     ]
+}
+
+extension CarrierRowViewModel {
+    var departureHour: Int? {
+        let comps = departTime.split(separator: ":")
+        guard let h = comps.first, let hour = Int(h) else { return nil }
+        return hour
+    }
+    
+    var hasTransfers: Bool {
+        note?.localizedCaseInsensitiveContains("пересад") ?? false
+    }
+}
+
+#Preview("CarrierTableRow • Dark", traits: .sizeThatFitsLayout) {
+    CarrierTableRow(
+        viewModel: CarrierRowViewModel(
+            carrierName: "РЖД",
+            logoSystemName: "rzd",
+            dateText: "14 января",
+            departTime: "10:00",
+            arriveTime: "14:30",
+            durationText: "4 ч 30 мин",
+            note: "С пересадкой в Костроме",
+            carrierCode: "680"
+        )
+    )
+    .padding(16)
+    .background(Color.black)
+    .environment(\.colorScheme, .dark)
 }

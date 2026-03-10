@@ -154,7 +154,8 @@ struct CarrierTableRow: View {
             departTime: "10:00",
             arriveTime: "14:30",
             durationText: "4 ч 30 мин",
-            note: "С пересадкой в Костроме"
+            note: "С пересадкой в Костроме",
+            carrierCode: "680"
         )
     )
     .padding(16)

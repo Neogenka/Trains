@@ -59,6 +59,19 @@ struct DayPartSectionView: View {
     
 }
 
+extension DayPart {
+    var range: Range<Int> {
+        switch self {
+            case .morning: return 6..<12
+            case .day:     return 12..<18
+            case .evening: return 18..<24
+            case .night:   return 0..<6
+        }
+    }
+    func contains(hour: Int) -> Bool { range.contains(hour) }
+}
+
+
 #Preview {
     List {
         DayPartSectionView(selectedParts: .constant([.morning, .night]))
